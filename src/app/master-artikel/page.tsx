@@ -4,6 +4,14 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 interface Motif {
   id: string
@@ -108,11 +116,11 @@ export default function Page() {
           prev.map((artikel) =>
             artikel.id === editingArtikel
               ? {
-                  ...artikel,
-                  motifCode: selectedMotif.motifCode,
-                  artikelCode: fullArtikelCode,
-                  artikelName: artikelForm.artikelName,
-                }
+                ...artikel,
+                motifCode: selectedMotif.motifCode,
+                artikelCode: fullArtikelCode,
+                artikelName: artikelForm.artikelName,
+              }
               : artikel,
           ),
         )
@@ -297,21 +305,26 @@ export default function Page() {
         <CardContent>
           <form onSubmit={handleArtikelSubmit} className="space-y-6">
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Master Motif</label>
-                <select
+              <div className="space-y-2">
+                <Label htmlFor="motif-select">Master Motif</Label>
+                <Select
                   value={artikelForm.selectedMotifId}
-                  onChange={(e) => setArtikelForm((prev) => ({ ...prev, selectedMotifId: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
+                  onValueChange={(value) =>
+                    setArtikelForm((prev) => ({ ...prev, selectedMotifId: value }))
+                  }
                   required
                 >
-                  <option value="">Select Motif</option>
-                  {motifs.map((motif) => (
-                    <option key={motif.id} value={motif.id}>
-                      {motif.motifCode} - {motif.motifName}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger id="motif-select" className="w-full">
+                    <SelectValue placeholder="Select Motif" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {motifs.map((motif) => (
+                      <SelectItem key={motif.id} value={motif.id || ""}>
+                        {motif.motifCode} - {motif.motifName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
@@ -327,9 +340,8 @@ export default function Page() {
                     value={artikelForm.artikelCodeSuffix}
                     onChange={(e) => setArtikelForm((prev) => ({ ...prev, artikelCodeSuffix: e.target.value }))}
                     disabled={!artikelForm.selectedMotifId}
-                    className={`flex-1 px-3 py-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-gray-500 ${
-                      !artikelForm.selectedMotifId ? "bg-gray-100 text-gray-400 cursor-not-allowed" : ""
-                    }`}
+                    className={`flex-1 px-3 py-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-gray-500 ${!artikelForm.selectedMotifId ? "bg-gray-100 text-gray-400 cursor-not-allowed" : ""
+                      }`}
                     placeholder="001"
                     maxLength={10}
                     required
@@ -344,9 +356,8 @@ export default function Page() {
                   value={artikelForm.artikelName}
                   onChange={(e) => setArtikelForm((prev) => ({ ...prev, artikelName: e.target.value }))}
                   disabled={!artikelForm.selectedMotifId}
-                  className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 ${
-                    !artikelForm.selectedMotifId ? "bg-gray-100 text-gray-400 cursor-not-allowed" : ""
-                  }`}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 ${!artikelForm.selectedMotifId ? "bg-gray-100 text-gray-400 cursor-not-allowed" : ""
+                    }`}
                   placeholder="Enter artikel name"
                   maxLength={200}
                   required

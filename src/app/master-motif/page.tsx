@@ -1,5 +1,4 @@
 "use client"
-
 import type React from "react"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
@@ -16,6 +15,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { SmartPagination } from "@/components/SmartPagination"
+import { api } from "@/lib/api"
+import Cookies from "js-cookie"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { CheckCircle2, XCircle } from "lucide-react"
 
 interface Motif {
   id?: string
@@ -23,16 +34,22 @@ interface Motif {
   motifName: string
 }
 
-interface MotifForm {
-  motifCode: string
-  motifName: string
+interface CreateUpdateMotifResponseModel {
+  isSuccess: boolean,
+  message: string
+}
+
+interface MotifDataListModel {
+  motifDataList: Motif[]
+  totalData: number
 }
 
 export default function Page() {
   const [motifs, setMotifs] = useState<Motif[]>([])
+  const [totalDataCount, setTotalDataCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(false)
-  const [motifCurrentPage, setMotifCurrentPage] = useState(1)
-  const itemsPerPage = 5
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 2
   const [currentMotif, setCurrentMotif] = useState<Motif>({
     id: undefined,
     motifCode: '',
@@ -40,76 +57,80 @@ export default function Page() {
   });
   const [isEdit, setIsEdit] = useState<boolean>(false);
   const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
-
-  //const [editingMotif, setEditingMotif] = useState<string | null>(null)
-  //const [deleteMotifId, setDeleteMotifId] = useState<string | undefined>(null)
+  const [modalStatus, setModalStatus] = useState<"success" | "error" | null>(null)
+  const [errorMessage, setErrorMessage] = useState("")
+  const username = Cookies.get('currentUser')
 
   const fetchMotifs = async () => {
     setIsLoading(true)
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500))
+      const data = await api.post<MotifDataListModel>("/api/v1/motif-api/get-motif-list", {
+        pageNumber: currentPage,
+        pageSize: itemsPerPage
+      });
 
-      setMotifs([
-        { id: "1", motifCode: "M01", motifName: "Floral Pattern" },
-        { id: "2", motifCode: "M02", motifName: "Geometric Design" },
-        { id: "3", motifCode: "M03", motifName: "Abstract Art" },
-        { id: "4", motifCode: "M04", motifName: "Striped Design" },
-        { id: "5", motifCode: "M05", motifName: "Polka Dot Pattern" },
-        { id: "6", motifCode: "M06", motifName: "Traditional Batik" },
-        { id: "7", motifCode: "M07", motifName: "Modern Stripes" },
-        { id: "8", motifCode: "M08", motifName: "Vintage Roses" },
-        { id: "9", motifCode: "M09", motifName: "Tropical Leaves" },
-        { id: "10", motifCode: "M10", motifName: "Ocean Waves" },
-        { id: "11", motifCode: "M11", motifName: "Mountain View" },
-        { id: "12", motifCode: "M12", motifName: "City Lights" },
-        { id: "13", motifCode: "M13", motifName: "Forest Green" },
-        { id: "14", motifCode: "M14", motifName: "Desert Sand" },
-      ])
+      setMotifs(data.motifDataList);
+      setTotalDataCount(data.totalData);
+
     } catch (error) {
       console.error("Error fetching motifs:", error)
-      setMotifs([])
+      setMotifs([]);
+      setTotalDataCount(0);
     } finally {
       setIsLoading(false)
     }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    console.log(currentMotif);
-    e.preventDefault()
-    const motifForm = { motifCode: "", motifName: "" }
-    if (!motifForm.motifCode.trim() || !motifForm.motifName.trim()) return
+    e.preventDefault();
 
     setIsLoading(true)
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      if (isEdit) {
+        const data = await api.post<CreateUpdateMotifResponseModel>("/api/v1/motif-api/update-motif", {
+          motifCode: currentMotif.motifCode.toUpperCase(),
+          motifName: currentMotif.motifName.toUpperCase(),
+          username: username
+        });
 
-      // if (editingMotif) {
-      //   setMotifs((prev) =>
-      //     prev.map((motif) =>
-      //       motif.id === editingMotif
-      //         ? { ...motif, motifCode: motifForm.motifCode, motifName: motifForm.motifName }
-      //         : motif,
-      //     ),
-      //   )
-      // } else {
-      //   const newMotif: Motif = {
-      //     id: Date.now().toString(),
-      //     motifCode: motifForm.motifCode,
-      //     motifName: motifForm.motifName,
-      //   }
-      //   setMotifs((prev) => [...prev, newMotif])
-      // }
+        if (data.isSuccess === false) {
+          setErrorMessage(data.message);
+          setModalStatus("error");
+        }
+        else {
+          setModalStatus("success");
+        }
 
-      //setEditingMotif(null)
+      }
+      else {
+        const data = await api.post<CreateUpdateMotifResponseModel>("/api/v1/motif-api/create-motif", {
+          motifCode: currentMotif.motifCode.toUpperCase(),
+          motifName: currentMotif.motifName.toUpperCase(),
+          username: username
+        });
+
+        if (data.isSuccess === false) {
+          setErrorMessage(data.message);
+          setModalStatus("error");
+        }
+        else {
+          setModalStatus("success");
+        }
+      }
+
     } catch (error) {
       console.error("Error saving motif:", error)
-    } finally {
-      setIsLoading(false)
     }
-  }
-
-  const handleUpdate = (motif: Motif) => {
-    //setEditingMotif(motif.id)
+    finally {
+      fetchMotifs();
+      setCurrentMotif({
+        id: undefined,
+        motifCode: '',
+        motifName: ''
+      });
+      setIsEdit(false);
+      setIsLoading(false);
+    }
   }
 
   const handleDelete = async (id: string) => {
@@ -122,7 +143,6 @@ export default function Page() {
       console.error("Error deleting motif:", error)
     } finally {
       setIsLoading(false)
-      //setDeleteMotifId(null)
     }
   }
 
@@ -130,67 +150,9 @@ export default function Page() {
     //setEditingMotif(null)
   }
 
-  const isMotifFormValid = () => {
-    //const currentMotif = motifs.find((m) => m.id === editingMotif)
-
-
-    return currentMotif?.motifCode?.trim() && currentMotif?.motifName?.trim()
-  }
-
   useEffect(() => {
     fetchMotifs()
-  }, [])
-
-  const paginatedMotifs = motifs.slice((motifCurrentPage - 1) * itemsPerPage, motifCurrentPage * itemsPerPage)
-
-  const PaginationControls = ({
-    currentPage,
-    totalPages,
-    onPageChange,
-  }: {
-    currentPage: number
-    totalPages: number
-    onPageChange: (page: number) => void
-  }) => {
-    if (totalPages <= 1) return null
-
-    return (
-      <div className="flex items-center justify-between mt-4">
-        <div className="text-sm text-gray-500">
-          Page {currentPage} of {totalPages}
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onPageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-          >
-            Previous
-          </Button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-            <Button
-              key={page}
-              variant={page === currentPage ? "default" : "outline"}
-              size="sm"
-              onClick={() => onPageChange(page)}
-              className={page === currentPage ? "bg-gray-800 text-white" : ""}
-            >
-              {page}
-            </Button>
-          ))}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onPageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-          >
-            Next
-          </Button>
-        </div>
-      </div>
-    )
-  }
+  }, [currentPage])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
@@ -220,60 +182,61 @@ export default function Page() {
                 </tr>
               </thead>
               <tbody>
-                {isLoading ? (
+                { totalDataCount === 0 ? (
                   <tr>
                     <td colSpan={3} className="text-center py-8 text-gray-500">
-                      Loading...
-                    </td>
-                  </tr>
-                ) : paginatedMotifs.length === 0 ? (
-                  <tr>
-                    <td colSpan={3} className="text-center py-8 text-gray-500">
-                      No motifs found
+                      No Motifs Found
                     </td>
                   </tr>
                 ) : (
-                  paginatedMotifs.map((motif) => (
-                    <tr key={motif.id} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="py-3 px-4 text-gray-800">{motif.motifCode}</td>
-                      <td className="py-3 px-4 text-gray-800">{motif.motifName}</td>
-                      <td className="py-3 px-4">
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setCurrentMotif(motif);
-                              setIsEdit(true);
-                            }}
-                            className="text-blue-600 border-blue-600 hover:bg-blue-50"
-                          >
-                            Update
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setCurrentMotif(motif);
-                              setShowDeleteModal(true);
-                            }}
-                            className="text-red-600 border-red-600 hover:bg-red-50"
-                          >
-                            Delete
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+                  motifs.map((motif) => {
+                    return (
+                      <tr key={motif.id} className="border-b border-gray-100 hover:bg-gray-50">
+                        <td className="py-3 px-4 text-gray-800">{motif.motifCode}</td>
+                        <td className="py-3 px-4 text-gray-800">{motif.motifName}</td>
+                        <td className="py-3 px-4">
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setCurrentMotif(motif);
+                                setIsEdit(true);
+                              }}
+                              className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                            >
+                              Update
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setCurrentMotif(motif);
+                                setShowDeleteModal(true);
+                              }}
+                              className="text-red-600 border-red-600 hover:bg-red-50"
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })
                 )}
               </tbody>
             </table>
           </div>
-          <PaginationControls
-            currentPage={motifCurrentPage}
-            totalPages={Math.ceil(motifs.length / itemsPerPage)}
-            onPageChange={setMotifCurrentPage}
-          />
+          <div className="mt-3">
+            <SmartPagination
+              totalItems={totalDataCount} // This would come from your .NET API count
+              pageSize={itemsPerPage}
+              currentPage={currentPage}
+              onPageChange={(page) => {
+                setCurrentPage(page);
+              }}
+            />
+          </div>
         </CardContent>
       </Card>
 
@@ -295,6 +258,7 @@ export default function Page() {
                   placeholder="e.g., M01"
                   required
                   className="uppercase"
+                  disabled={isEdit === true}
                 />
                 <p className="text-xs text-gray-500">Maximum 3 characters</p>
               </div>
@@ -307,6 +271,7 @@ export default function Page() {
                   maxLength={200}
                   placeholder="e.g., Floral Pattern"
                   required
+                  className="uppercase"
                 />
                 <p className="text-xs text-gray-500">Maximum 200 characters</p>
               </div>
@@ -352,6 +317,44 @@ export default function Page() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <Dialog open={modalStatus === "success"} onOpenChange={() => setModalStatus(null)}>
+        <DialogContent className="sm:max-w-md text-center">
+          <DialogHeader className="flex flex-col items-center justify-center gap-2">
+            <CheckCircle2 className="h-12 w-12 text-green-500" />
+            <DialogTitle>Success!</DialogTitle>
+          </DialogHeader>
+          <DialogDescription>
+            The new motif has been successfully added to the database.
+          </DialogDescription>
+          <DialogFooter className="sm:justify-center">
+            <Button type="button" onClick={() => setModalStatus(null)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* FAILED MODAL */}
+      <Dialog open={modalStatus === "error"} onOpenChange={() => setModalStatus(null)}>
+        <DialogContent className="sm:max-w-md text-center">
+          <DialogHeader className="flex flex-col items-center justify-center gap-2">
+            <XCircle className="h-12 w-12 text-destructive" />
+            <DialogTitle>Operation Failed</DialogTitle>
+          </DialogHeader>
+          <DialogDescription>
+            {errorMessage}
+          </DialogDescription>
+          <DialogFooter className="sm:justify-center">
+            <Button
+              variant="destructive"
+              type="button"
+              onClick={() => setModalStatus(null)}
+            >
+              Ok
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

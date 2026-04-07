@@ -5,12 +5,11 @@ import "./globals.css";
 import {
   SidebarProvider,
   SidebarInset,
-  SidebarTrigger
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
-import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import Sidebar from "@/components/app-sidebar";
+import { cookies } from "next/headers";
+import { AppSidebar } from "@/components/app-sidebar";
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -22,11 +21,14 @@ export const metadata: Metadata = {
   description: "Internal dashboard for managing convection inventory listings.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+
+  const cookieStore = await cookies();
+  const username = cookieStore.get('currentUser')?.value ?? "GUEST";
   return (
     <html lang="en" className={cn("font-sans", geist.variable)}>
       <body className={inter.className}>
@@ -37,7 +39,7 @@ export default function RootLayout({
           <SidebarProvider>
 
             {/* 1. The main Sidebar content (which we moved to its own file) */}
-            <Sidebar />
+            <AppSidebar username={username} />
 
             {/* 2. SidebarInset automatically handles the content padding/width 
                  shifts when the sidebar expands or collapses.
