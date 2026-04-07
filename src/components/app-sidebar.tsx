@@ -1,55 +1,44 @@
-// src/components/app-sidebar.tsx
 "use client"
 
-import { Home, Package, Users, Settings, BarChart3 } from "lucide-react"
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from "@/components/ui/sidebar"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { Button } from "@/components/ui/button"
 
 const navItems = [
-  { title: "Dashboard", url: "/", icon: Home },
-  { title: "Stock Inventory", url: "/inventory", icon: Package },
-  { title: "Users", url: "/users", icon: Users },
-  { title: "Analytics", url: "/analytics", icon: BarChart3 },
-  { title: "Settings", url: "/settings", icon: Settings },
+  { name: "Dashboard", href: "/" },
+  { name: "Master Motif", href: "/master-motif" },
+  { name: "Master Tukang Potong / CMT", href: "/master-cmt" },
+  { name: "Master Artikel", href: "/master-artikel" },
+  { name: "PO", href: "/po" },
+  { name: "Setoran", href: "/setoran" },
 ]
 
-export function AppSidebar() {
+export default function Sidebar() {
+  const pathname = usePathname()
+
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader className="p-4">
-        <div className="flex items-center gap-2 px-2 font-bold text-xl">
-          <div className="bg-primary h-6 w-6 rounded-md" />
-          <span className="group-data-[collapsible=icon]:hidden">Konveksi</span>
+    <nav className="w-64 bg-gray-100 border-r border-gray-200 flex flex-col">
+      <div className="p-6 border-b border-gray-200">
+        <h1 className="text-xl font-bold text-gray-800">Stock Listing Dashboard</h1>
+      </div>
+      <div className="flex-1 p-4">
+        <div className="space-y-2">
+          {navItems.map((item) => (
+            <Link key={item.name} href={item.href}>
+              <Button
+                variant={pathname === item.href ? "default" : "ghost"}
+                className={`w-full justify-start px-4 py-3 text-sm font-medium transition-colors ${
+                  pathname === item.href
+                    ? "bg-gray-800 text-white hover:bg-gray-700"
+                    : "text-gray-600 hover:text-gray-800 hover:bg-gray-200"
+                }`}
+              >
+                {item.name}
+              </Button>
+            </Link>
+          ))}
         </div>
-      </SidebarHeader>
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Application</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {navItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild tooltip={item.title}>
-                    <a href={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-    </Sidebar>
+      </div>
+    </nav>
   )
 }
